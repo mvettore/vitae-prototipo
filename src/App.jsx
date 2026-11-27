@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as S from "./store.js";
-import { demoData } from "./demo.js";
+import { refreshCatalog, resetPersonal } from "./demo.js";
 import { Empty, FavButton, Icon, IconButton, Logo, RatingBadge } from "./components/ui.jsx";
 import { ProducerDetail, WineDetail } from "./components/Detail.jsx";
-import { CURRENT_EDITION, ListsManager, ProducerForm, RatingForm, WineForm } from "./components/Forms.jsx";
-import { ScanDialog } from "./components/ScanDialog.jsx";
+import { CURRENT_EDITION, ListsManager } from "./components/Forms.jsx";
 
 function useWide() {
   const q = "(min-width: 900px)";
@@ -34,7 +33,7 @@ const grapeNames = (w) => (w.grapes || "").split(/[,;]/).map((g) => g.replace(/\
 const priceNum = (r) => parseFloat((r?.price || "").replace(/[^\d,.]/g, "").replace(",", ".")) || Infinity;
 
 export default function App() {
-  const [data, setData] = useState(() => (S.hasSaved() ? S.load() : demoData()));
+  const [data, setData] = useState(() => refreshCatalog(S.hasSaved() ? S.load() : null));
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState("all"); // vedi BROWSE, oppure list:<nome>
   const [facet, setFacet] = useState(null); // { kind: "denomination"|"grape", value }
@@ -49,7 +48,6 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const wide = useWide();
   const searchRef = useRef(null);
-  const importRef = useRef(null);
   const toastTimer = useRef(null);
   const detailRef = useRef(null);
 
@@ -188,53 +186,13 @@ export default function App() {
     patch: (kind, id, patch) => update((d) => S.patchItem(d, kind, id, patch)),
     toggleList: (kind, id, l) => update((d) => S.toggleInList(d, kind, id, l)),
     manageLists: () => setDialog({ type: "lists" }),
-    editProducer: (p) => setDialog({ type: "producer", initial: p }),
-    editWine: (w) => setDialog({ type: "wine", initial: w }),
-    newWine: (producerId) => setDialog({ type: "wine", initial: { producerId } }),
-    newRating: (wineId) => setDialog({ type: "rating", wineId }),
-    editRating: (wineId, r) => setDialog({ type: "rating", wineId, initial: r }),
-    deleteRating: (wineId, r) => {
-      if (confirm(`Eliminare la valutazione dell'edizione ${r.edition || ""}?`)) update((d) => S.deleteRating(d, wineId, r.id));
-    },
-    deleteProducer: (p) => {
-      const n = (winesByProducer[p.id] || []).length;
-      if (confirm(`Eliminare ${p.name}${n ? ` e i suoi ${n} vini` : ""} dal taccuino?`)) {
-        update((d) => S.deleteProducer(d, p.id));
-        flash("Produttore eliminato");
-      }
-    },
-    deleteWine: (w) => {
-      if (confirm(`Eliminare ${w.name} dal taccuino?`)) {
-        update((d) => S.deleteWine(d, w.id));
-        flash("Vino eliminato");
-      }
-    },
   };
 
-  const exportBackup = () => {
-    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), ...data }, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `taccuino-vitae-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  const importBackup = async (file) => {
-    try {
-      const incoming = S.sanitize(JSON.parse(await file.text()));
-      if (!confirm(`Sostituire il taccuino con il backup (${incoming.producers.length} produttori, ${incoming.wines.length} vini)?`)) return;
-      setData(incoming);
-      setStack([]);
-      flash("Backup ripristinato");
-    } catch {
-      flash("File di backup non valido");
-    }
-  };
-  const clearDemo = () => {
-    if (!confirm("Rimuovere i dati dimostrativi e iniziare con il taccuino vuoto?")) return;
-    setData(S.emptyData());
+  const resetAll = () => {
+    if (!confirm("Azzerare preferiti, liste e note del prototipo?")) return;
+    setData(resetPersonal());
     setStack([]);
+    flash("Prototipo azzerato");
   };
 
   // ── Render ──────────────────────────────────────────────────
@@ -247,7 +205,6 @@ export default function App() {
         .filter((r) => r.item)
         .slice(0, 8)
     : [];
-  const isEmpty = data.producers.length === 0;
   const browsingGroups = (scope === "denominations" || scope === "grapes") && !facet;
   const priceOf = (r) => (r?.price ? r.price.replace(/^€\s*/, "€ ") : null);
 
@@ -280,9 +237,9 @@ export default function App() {
           <button className="logo-btn" onClick={() => { goScope("all"); setQuery(""); closeDetail(); }} aria-label="Torna all'inizio">
             <Logo edition={shownEdition} />
           </button>
-          <IconButton icon="plus" label="Aggiungi" onClick={() => setDialog({ type: "new" })} className="accent" />
+          <IconButton icon="star" label="Preferiti" onClick={() => goScope("fav")} active={scope === "fav"} filled={scope === "fav"} className="accent" />
         </header>
-        <div className="proto-banner">Prototipo non ufficiale · non affiliato ad AIS</div>
+        <div className="proto-banner">Prototipo non ufficiale · dati inventati</div>
 
         <div className="search-zone">
           <div className="search">
@@ -347,23 +304,7 @@ export default function App() {
         </div>
 
         <main className="results">
-          {data.demo && !isEmpty && (
-            <div className="demo-note">
-              <span>Stai vedendo <b>dati dimostrativi inventati</b>.</span>
-              <button className="link-btn" onClick={clearDemo}>Inizia vuoto</button>
-            </div>
-          )}
-
-          {isEmpty ? (
-            <Empty title="Il taccuino è vuoto">
-              <p>Carica gli screenshot di una scheda dall'app Vitae: produttore, vini, punteggi e scheda tecnica vengono letti in automatico.</p>
-              <div className="empty-actions">
-                <button className="btn btn-primary" onClick={() => setDialog({ type: "scan" })}><Icon name="camera" size={16} /> Da screenshot</button>
-                <button className="btn" onClick={() => setDialog({ type: "producer" })}><Icon name="plus" size={16} /> Produttore</button>
-                <button className="btn" onClick={() => setData(demoData())}>Dati dimostrativi</button>
-              </div>
-            </Empty>
-          ) : browsingGroups ? (
+          {browsingGroups ? (
             <ul className="group-list">
               {groups.map(([name, n]) => (
                 <li key={name}>
@@ -509,66 +450,13 @@ export default function App() {
             </div>
             <div className="drawer-foot">
               <button onClick={() => { setMenuOpen(false); setDialog({ type: "lists" }); }}>Le mie liste</button>
-              <button onClick={() => { setMenuOpen(false); exportBackup(); }}>Esporta backup</button>
-              <button onClick={() => { setMenuOpen(false); importRef.current?.click(); }}>Ripristina backup</button>
-              <p className="muted small">Prototipo non ufficiale. I dati inseriti restano su questo dispositivo.</p>
+              <button onClick={() => { setMenuOpen(false); resetAll(); }}>Azzera preferiti e note</button>
+              <p className="muted small">Prototipo non ufficiale: produttori, vini e punteggi sono inventati. Preferiti, liste e note restano su questo dispositivo.</p>
             </div>
           </nav>
         </div>
       )}
-      <input ref={importRef} type="file" accept="application/json" hidden onChange={(e) => { e.target.files[0] && importBackup(e.target.files[0]); e.target.value = ""; }} />
-
       {/* ── Dialog ── */}
-      {dialog?.type === "new" && (
-        <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && setDialog(null)}>
-          <div className="dialog dialog-choice">
-            <h2>Aggiungi</h2>
-            <button className="choice" onClick={() => setDialog({ type: "scan" })}><Icon name="camera" /> <span><b>Da screenshot Vitae</b><small>Scheda produttore, elenco vini o scheda vino</small></span></button>
-            <button className="choice" onClick={() => setDialog({ type: "producer" })}><Icon name="building" /> <span><b>Produttore</b><small>Inserimento manuale</small></span></button>
-            <button className="choice" onClick={() => setDialog({ type: "wine" })}><Icon name="glass" /> <span><b>Vino</b><small>Inserimento manuale</small></span></button>
-            <button className="btn" onClick={() => setDialog(null)}>Annulla</button>
-          </div>
-        </div>
-      )}
-      {dialog?.type === "producer" && (
-        <ProducerForm
-          initial={dialog.initial}
-          onClose={() => setDialog(null)}
-          onSave={(p) => {
-            const isNew = !p.id;
-            const id = p.id || S.uid();
-            update((d) => S.upsertProducer(d, { ...p, id }));
-            setDialog(null);
-            if (isNew) openFromList("producer", id);
-          }}
-        />
-      )}
-      {dialog?.type === "wine" && (
-        <WineForm
-          initial={dialog.initial}
-          producers={data.producers}
-          onClose={() => setDialog(null)}
-          onSave={(w, producerName) => {
-            const isNew = !w.id;
-            const id = w.id || S.uid();
-            const found = data.producers.find((p) => S.norm(p.name) === S.norm(producerName));
-            const producerId = found?.id || S.uid();
-            update((d) => {
-              const withProducer = found ? d : S.upsertProducer(d, { id: producerId, name: producerName });
-              return S.upsertWine(withProducer, { ...w, id, producerId });
-            });
-            setDialog(null);
-            if (isNew) open("wine", id);
-          }}
-        />
-      )}
-      {dialog?.type === "rating" && (
-        <RatingForm
-          initial={dialog.initial}
-          onClose={() => setDialog(null)}
-          onSave={(r) => { update((d) => S.saveRating(d, dialog.wineId, r)); setDialog(null); }}
-        />
-      )}
       {dialog?.type === "lists" && (
         <ListsManager
           lists={data.lists}
@@ -579,23 +467,6 @@ export default function App() {
           onRemove={(n) => { update((d) => S.removeList(d, n)); if (scope === `list:${n}`) setScope("all"); }}
         />
       )}
-      {dialog?.type === "scan" && (
-        <ScanDialog
-          onClose={() => setDialog(null)}
-          onImport={(scan) => {
-            try {
-              const res = S.mergeScan(data, scan);
-              setData(res.data);
-              setDialog(null);
-              openFromList("producer", res.producerId);
-              flash(`${res.producerNew ? "Nuovo produttore" : "Produttore aggiornato"} · ${res.winesNew} vini nuovi · ${res.ratingsNew} valutazioni`);
-            } catch (e) {
-              flash(e.message);
-            }
-          }}
-        />
-      )}
-
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
   );

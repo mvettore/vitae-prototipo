@@ -1,30 +1,16 @@
-# Taccuino Vitae
+# Vitae, prototipo di interfaccia
 
-Prototipo **non ufficiale** di una nuova interfaccia per la guida vini **Vitae** dell'AIS: web app installabile su iPhone, con il look dell'app ufficiale (bianco e arancio, punteggio in centesimi e viti) e una navigazione ripensata.
+Prototipo **non ufficiale** di una nuova interfaccia per la guida vini **Vitae** dell'AIS. È una web app statica, installabile su iPhone, con il look dell'app ufficiale (bianco e arancio, punteggio in centesimi e viti) e una navigazione ripensata.
 
-Al primo avvio mostra **dati dimostrativi inventati** (produttori e vini che non esistono), per non pubblicare contenuti della guida. Dal banner "Inizia vuoto" si parte con il taccuino vuoto e si aggiungono i propri dati.
+**Tutti i dati sono inventati:** produttori, persone, vini, punteggi e prezzi sono generati (`src/demo.js`, circa 60 produttori e 200+ vini). Sono reali solo denominazioni e vitigni, così ricerca e filtri sono credibili. Non contiene contenuti della guida.
 
-Il logo in testata è una ricostruzione testuale: per usare il file ufficiale, mettilo in `public/logo.svg` e imposta `USE_LOGO_FILE = true` in `src/components/ui.jsx`. Il sito è escluso dai motori di ricerca (`robots.txt`, meta e header `noindex`).
+## Cosa mostra
 
-Nasce per coprire quello che manca all'app ufficiale:
-
-- **Ricerca sempre visibile.** Un solo campo cerca produttori, vini, vitigni, località e le tue note. La scheda si apre sopra l'elenco (su iPad e desktop, accanto): chiudendola ritrovi risultati e scroll dove li avevi lasciati.
-- **Navigazione dentro la scheda.** Produttore → vino → altro vino dello stesso produttore, con "indietro" che torna al passo precedente, non all'inizio.
-- **Note personali** su ogni produttore e su ogni vino, salvate in automatico.
-- **Preferiti e liste personali** (es. "Da provare", "Da comprare"), filtrabili con un tocco.
-- **Valutazioni per edizione:** sullo stesso vino vedi la storia tra le edizioni, viti fino alla 2026 e centesimi dalla 2027, più il Tastevin.
-- **Scheda tecnica per annata** (alcol, bottiglie, fermentazione, affinamento, abbinamento) e cambio edizione con un tocco.
-- **Sfoglia per denominazione e vitigno**, come nel menu dell'app ufficiale.
-- **Recenti**, filtri per edizione, regione e tipologia, ordinamento per punteggio o prezzo.
-
-## Da dove vengono i dati
-
-Il taccuino non contiene dati della guida: li inserisci tu, per uso personale.
-
-- **A mano**, oppure
-- **da screenshot:** fai uno screenshot della scheda del produttore nell'app Vitae (o una foto della pagina) e caricalo. Claude legge produttore, vini, edizione, annata e punteggi; le descrizioni della guida non vengono copiate. Prima di salvare puoi correggere tutto.
-
-Tutto resta nel browser del dispositivo (localStorage). Dal menu **⋯** puoi esportare e ripristinare un backup JSON.
+- **Ricerca sempre visibile:** un campo solo per vini, produttori, denominazioni, vitigni e note. La scheda si apre sopra l'elenco (su iPad accanto): chiudendola si ritrovano risultati e scroll dove erano.
+- **Navigazione dentro la scheda:** vino → produttore → altro vino, con "indietro" che torna al passo precedente.
+- **Valutazione per edizione:** punteggio e scheda tecnica dell'annata (alcol, bottiglie, fermentazione, affinamento, abbinamento), con cambio edizione 2027 / 2026 / 2025 in un tocco.
+- **Personale:** preferiti, liste ("Da provare", "Da comprare" e altre) e note su vini e produttori, salvate sul dispositivo.
+- **Sfoglia** per denominazione e vitigno, filtri per edizione, regione e tipologia, ordinamento per punteggio o prezzo.
 
 ## Sviluppo
 
@@ -33,19 +19,10 @@ npm install
 npm run dev
 ```
 
-Per provare la lettura degli screenshot in locale, crea `.env.local` con:
-
-```
-VITE_ANTHROPIC_API_KEY=sk-ant-...
-```
-
-(La chiave in `.env.local` è solo per lo sviluppo: finisce nel bundle del browser, non usarla in produzione.)
-
 ## Deploy su Netlify
 
-1. Importa il repository su Netlify: build `npm run build`, cartella `dist` (già in `netlify.toml`).
-2. In **Site settings → Environment variables** aggiungi `ANTHROPIC_API_KEY`.
-3. Facoltativo: `CLAUDE_MODEL_VISION` per cambiare modello (predefinito `claude-haiku-5-5`).
-4. Da Safari su iPhone: Condividi → **Aggiungi alla schermata Home**.
+Importa il repository su Netlify: build `npm run build`, cartella `dist` (già in `netlify.toml`). Non servono variabili d'ambiente.
 
-La function `netlify/functions/scan-vitae.js` è l'unica parte server: riceve lo screenshot e restituisce i dati in JSON.
+Il sito è escluso dai motori di ricerca (`robots.txt`, meta e header `noindex`). Dato che riprende il look dell'app ufficiale, conviene anche proteggerlo con password (Netlify: *Site configuration → Access control*).
+
+Il logo in testata è una ricostruzione testuale: per usare il file ufficiale, mettilo in `public/logo.svg` e imposta `USE_LOGO_FILE = true` in `src/components/ui.jsx`.

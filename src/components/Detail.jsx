@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { FavButton, Icon, IconButton, RatingBadge, typeKey } from "./ui.jsx";
-import { REVIEW_FACTS, bestRating, fmtScore, latestRating, ratingValue, sortedRatings } from "../store.js";
+import { FavButton, Icon, RatingBadge, typeKey } from "./ui.jsx";
+import { REVIEW_FACTS, fmtScore, latestRating, ratingValue, sortedRatings } from "../store.js";
 
 function ListChips({ lists, active, onToggle, onManage }) {
   return (
@@ -104,10 +104,9 @@ export function ProducerDetail({ producer: p, wines, lists, actions }) {
       <section className="block">
         <div className="block-head">
           <h3 className="block-title">{wines.length} {wines.length === 1 ? "vino recensito" : "vini recensiti"}</h3>
-          <button className="btn btn-sm" onClick={() => actions.newWine(p.id)}><Icon name="plus" size={16} /> Vino</button>
         </div>
         {sorted.length === 0 ? (
-          <p className="muted">Nessun vino ancora: aggiungilo a mano o da uno screenshot.</p>
+          <p className="muted">Nessun vino recensito.</p>
         ) : (
           <ul className="wine-rows">
             {sorted.map((w) => {
@@ -132,10 +131,6 @@ export function ProducerDetail({ producer: p, wines, lists, actions }) {
 
       <Notes value={p.notes} onChange={(notes) => actions.patch("producer", p.id, { notes })} placeholder="Visite, persone conosciute, impressioni sulla cantina…" />
 
-      <div className="detail-actions">
-        <button className="btn btn-sm" onClick={() => actions.editProducer(p)}><Icon name="edit" size={16} /> Modifica</button>
-        <button className="btn btn-sm btn-danger" onClick={() => actions.deleteProducer(p)}><Icon name="trash" size={16} /> Elimina</button>
-      </div>
     </article>
   );
 }
@@ -202,23 +197,19 @@ export function WineDetail({ wine: w, producer, siblings, lists, actions }) {
       <section className="block">
         <div className="block-head">
           <h3 className="block-title">Storico nelle edizioni</h3>
-          <button className="btn btn-sm" onClick={() => actions.newRating(w.id)}><Icon name="plus" size={16} /> Edizione</button>
         </div>
         {ratings.length === 0 ? (
           <p className="muted">Nessuna valutazione registrata.</p>
         ) : (
           <table className="history">
-            <thead><tr><th>Edizione</th><th>Annata</th><th>Valutazione</th><th aria-label="Azioni" /></tr></thead>
+            <thead><tr><th>Edizione</th><th>Annata</th><th>Valutazione</th><th>Prezzo</th></tr></thead>
             <tbody>
               {ratings.map((x) => (
                 <tr key={x.id} className={x.id === r?.id ? "is-sel" : ""} onClick={() => setSelId(x.id)}>
                   <td className="num">{x.edition || "—"}</td>
                   <td className="num">{x.vintage || "—"}</td>
                   <td><RatingBadge rating={x} type={w.type} size="sm" /></td>
-                  <td className="row-actions" onClick={(e) => e.stopPropagation()}>
-                    <IconButton icon="edit" label="Modifica valutazione" onClick={() => actions.editRating(w.id, x)} />
-                    <IconButton icon="trash" label="Elimina valutazione" onClick={() => actions.deleteRating(w.id, x)} />
-                  </td>
+                  <td className="num">{x.price || "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -246,12 +237,7 @@ export function WineDetail({ wine: w, producer, siblings, lists, actions }) {
         </section>
       )}
 
-      <div className="detail-actions">
-        <button className="btn btn-sm" onClick={() => actions.editWine(w)}><Icon name="edit" size={16} /> Modifica</button>
-        <button className="btn btn-sm btn-danger" onClick={() => actions.deleteWine(w)}><Icon name="trash" size={16} /> Elimina</button>
-      </div>
     </article>
   );
 }
 
-export { bestRating };

@@ -348,19 +348,6 @@ a { color: inherit; }
 .lists-manager { list-style: none; padding: 0; margin: 0 0 14px; }
 .lists-manager li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 
-.drop {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; width: 100%;
-  border: 2px dashed var(--orange); background: var(--orange-soft); border-radius: 14px; padding: 28px; cursor: pointer; color: var(--orange); font-weight: 600;
-}
-.previews { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; }
-.previews img { height: 140px; border-radius: 8px; border: 1px solid var(--line); }
-.error { color: var(--danger); }
-.scan-wines { display: grid; gap: 10px; }
-.scan-wine { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 0; }
-.scan-wine.is-off { opacity: 0.5; }
-.scan-wine-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.spinner { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--orange-soft); border-top-color: var(--orange); animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .empty { text-align: center; color: var(--muted); padding: 48px 16px; max-width: 440px; margin: 0 auto; }
 .empty-title { font-size: 20px; color: var(--text); margin: 0 0 6px; font-weight: 700; }
