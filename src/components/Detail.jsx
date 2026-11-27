@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FavButton, Icon, RatingBadge, typeKey } from "./ui.jsx";
-import { REVIEW_FACTS, fmtScore, latestRating, ratingValue, sortedRatings } from "../store.js";
+import { REVIEW_FACTS, fmtScore, latestRating, ratingValue, sortedRatings, sortedTastings } from "../store.js";
 
 function ListChips({ lists, active, onToggle, onManage }) {
   return (
@@ -192,7 +192,39 @@ export function WineDetail({ wine: w, producer, siblings, lists, actions }) {
 
       <ListChips lists={lists} active={w.lists} onToggle={(l) => actions.toggleList("wine", w.id, l)} onManage={actions.manageLists} />
 
-      <Notes value={w.notes} onChange={(notes) => actions.patch("wine", w.id, { notes })} placeholder="Assaggi, abbinamenti provati, dove l'hai trovato e a che prezzo…" />
+      <section className="block">
+        <div className="block-head">
+          <h3 className="block-title">Le mie degustazioni</h3>
+          <button className="btn btn-sm" onClick={() => actions.newTasting(w.id)}><Icon name="plus" size={16} /> Degustazione</button>
+        </div>
+        {(w.tastings || []).length === 0 ? (
+          <p className="muted">Annota i tuoi assaggi: vista, naso, bocca e il tuo voto, annata per annata.</p>
+        ) : (
+          <ul className="tastings">
+            {sortedTastings(w).map((t) => (
+              <li key={t.id}>
+                <button className="tasting" onClick={() => actions.editTasting(w.id, t)}>
+                  <div className="tasting-head">
+                    <span className="tasting-when">
+                      {t.date ? new Date(t.date + "T12:00").toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" }) : "Senza data"}
+                      {t.vintage ? <> · <b>{t.vintage}</b></> : null}
+                    </span>
+                    {t.score != null && <span className="my-score">{fmtScore(t.score)}</span>}
+                  </div>
+                  {t.occasion && <div className="tasting-occasion">{t.occasion}</div>}
+                  <dl className="tasting-body">
+                    {[["Vista", t.sight], ["Naso", t.nose], ["Bocca", t.palate], ["Abbinamento", t.pairing], ["Note", t.notes]]
+                      .filter(([, v]) => v)
+                      .map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+                  </dl>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <Notes value={w.notes} onChange={(notes) => actions.patch("wine", w.id, { notes })} placeholder="Dove l'hai trovato, a che prezzo, chi te l'ha consigliato…" />
 
       <section className="block">
         <div className="block-head">

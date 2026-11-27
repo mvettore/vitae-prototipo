@@ -3,7 +3,7 @@ import * as S from "./store.js";
 import { refreshCatalog, resetPersonal } from "./demo.js";
 import { Empty, FavButton, Icon, IconButton, Logo, RatingBadge } from "./components/ui.jsx";
 import { ProducerDetail, WineDetail } from "./components/Detail.jsx";
-import { CURRENT_EDITION, ListsManager } from "./components/Forms.jsx";
+import { CURRENT_EDITION, ListsManager, TastingForm } from "./components/Forms.jsx";
 
 function useWide() {
   const q = "(min-width: 900px)";
@@ -108,7 +108,8 @@ export default function App() {
       if (facet?.kind === "grape" && !grapeNames(w).includes(facet.value)) return false;
       if (!tokens.length) return true;
       return matchesAll(S.norm([w.name, w.denomination, w.classification, w.grapes, w.type, w.notes, p?.name, p?.owner, p?.town, p?.region,
-        ...w.ratings.map((r) => r.vintage)].join(" ")), tokens);
+        ...w.ratings.map((r) => r.vintage),
+        ...(w.tastings || []).flatMap((t) => [t.occasion, t.sight, t.nose, t.palate, t.pairing, t.notes])].join(" ")), tokens);
     };
     const producerOk = (p) => {
       if (facet || type) return false; // denominazione, vitigno e tipologia sono attributi dei vini
@@ -186,6 +187,8 @@ export default function App() {
     patch: (kind, id, patch) => update((d) => S.patchItem(d, kind, id, patch)),
     toggleList: (kind, id, l) => update((d) => S.toggleInList(d, kind, id, l)),
     manageLists: () => setDialog({ type: "lists" }),
+    newTasting: (wineId) => setDialog({ type: "tasting", wineId }),
+    editTasting: (wineId, t) => setDialog({ type: "tasting", wineId, initial: t }),
   };
 
   const resetAll = () => {
@@ -348,8 +351,9 @@ export default function App() {
                               <div className="card-title">{w.name}{r?.vintage ? ` ${r.vintage}` : ""}</div>
                               <div className="card-sub">{p?.name}</div>
                               <div className="card-facts">{[p?.region, w.type, priceOf(r)].filter(Boolean).join(" · ")}</div>
-                              {(w.notes || w.lists.length > 0) && (
+                              {(w.notes || w.lists.length > 0 || w.tastings?.length > 0) && (
                                 <div className="card-meta">
+                                  {w.tastings?.length > 0 && <span className="meta-note"><Icon name="glass" size={13} /> {w.tastings.length} {w.tastings.length === 1 ? "degustazione" : "degustazioni"}</span>}
                                   {w.notes && <span className="meta-note"><Icon name="note" size={13} /> nota</span>}
                                   {w.lists.map((l) => <span key={l} className="tag">{l}</span>)}
                                 </div>
@@ -457,6 +461,23 @@ export default function App() {
         </div>
       )}
       {/* ── Dialog ── */}
+      {dialog?.type === "tasting" && (() => {
+        const w = wineById[dialog.wineId];
+        const vintages = [...new Set((w?.ratings || []).map((r) => r.vintage).filter(Boolean))].sort((a, b) => b - a);
+        return (
+          <TastingForm
+            initial={dialog.initial}
+            vintages={vintages}
+            onClose={() => setDialog(null)}
+            onSave={(t) => { update((d) => S.saveTasting(d, dialog.wineId, t)); setDialog(null); flash("Degustazione salvata"); }}
+            onDelete={() => {
+              if (!confirm("Eliminare questa degustazione?")) return;
+              update((d) => S.deleteTasting(d, dialog.wineId, dialog.initial.id));
+              setDialog(null);
+            }}
+          />
+        );
+      })()}
       {dialog?.type === "lists" && (
         <ListsManager
           lists={data.lists}

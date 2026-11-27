@@ -358,3 +358,19 @@ a { color: inherit; }
   background: #1d1d1b; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px;
   max-width: calc(100vw - 32px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
+
+/* ── Degustazioni personali ── */
+.field-area { width: 100%; border-radius: 10px; border: 1px solid var(--line); background: #fff; padding: 10px 12px; font-size: 16px; line-height: 1.45; resize: vertical; }
+.field-area:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-soft); }
+.tastings { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.tasting { display: block; width: 100%; text-align: left; border: 1px solid var(--line); background: #fffaf5; border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+.tasting:hover { border-color: var(--orange); }
+.tasting-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tasting-when { font-size: 14px; color: var(--muted); }
+.tasting-when b { color: var(--text); }
+.my-score { border: 1.5px solid var(--orange); color: var(--orange); border-radius: 6px; padding: 2px 7px; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+.tasting-occasion { font-weight: 600; margin-top: 2px; }
+.tasting-body { margin: 8px 0 0; display: grid; gap: 4px; }
+.tasting-body > div { display: grid; grid-template-columns: 92px 1fr; gap: 8px; font-size: 14px; }
+.tasting-body dt { color: var(--muted); }
+.tasting-body dd { margin: 0; }

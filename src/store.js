@@ -69,7 +69,7 @@ export function sanitize(d) {
     version: 1,
     dataVersion: d.dataVersion,
     producers: Array.isArray(d.producers) ? d.producers.map((p) => ({ lists: [], notes: "", favorite: false, ...p })) : [],
-    wines: Array.isArray(d.wines) ? d.wines.map((w) => ({ lists: [], notes: "", favorite: false, ratings: [], ...w })) : [],
+    wines: Array.isArray(d.wines) ? d.wines.map((w) => ({ lists: [], notes: "", favorite: false, ratings: [], tastings: [], ...w })) : [],
     lists: Array.isArray(d.lists) ? d.lists.filter((l) => typeof l === "string") : base.lists,
     recent: Array.isArray(d.recent) ? d.recent : [],
   };
@@ -122,6 +122,31 @@ export function patchItem(data, kind, id, patch) {
 
 
 
+
+// ── Degustazioni personali ──────────────────────────────────
+// { id, date, vintage, occasion, score, sight, nose, palate, pairing, notes }
+export function saveTasting(data, wineId, t) {
+  return {
+    ...data,
+    wines: data.wines.map((w) => {
+      if (w.id !== wineId) return w;
+      const list = w.tastings || [];
+      const tastings = t.id && list.some((x) => x.id === t.id)
+        ? list.map((x) => (x.id === t.id ? t : x))
+        : [...list, { ...t, id: `t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}` }];
+      return { ...w, tastings, updatedAt: new Date().toISOString() };
+    }),
+  };
+}
+
+export function deleteTasting(data, wineId, tastingId) {
+  return {
+    ...data,
+    wines: data.wines.map((w) => (w.id === wineId ? { ...w, tastings: (w.tastings || []).filter((x) => x.id !== tastingId) } : w)),
+  };
+}
+
+export const sortedTastings = (w) => [...(w.tastings || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
 export function pushRecent(data, kind, id) {
   const recent = [{ kind, id }, ...data.recent.filter((r) => r.id !== id)].slice(0, 12);

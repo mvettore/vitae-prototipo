@@ -3,7 +3,7 @@
 // Il generatore è deterministico (seed fisso): gli id restano stabili tra i
 // ricaricamenti, così preferiti, liste e note dell'utente non si perdono.
 
-export const DATA_VERSION = 4;
+export const DATA_VERSION = 5;
 
 // ── PRNG con seed (mulberry32) ───────────────────────────────
 function rng(seed) {
@@ -269,7 +269,7 @@ const fmtInt = (n) => n.toLocaleString("it-IT");
 function handmade() {
   const p = (id, name, f) => ({ id, name, favorite: false, notes: "", lists: [], visits: false, shop: false, phone: "", ...f });
   const w = (id, producerId, name, f, ratings) => ({
-    id, producerId, name, favorite: false, notes: "", lists: [], ...f,
+    id, producerId, name, favorite: false, notes: "", lists: [], tastings: [], ...f,
     ratings: ratings.map((r) => ({ id: `${id}-${r.edition}`, tastevin: false, selection: "", format: "0,750l", ...r })),
   });
   const producers = [
@@ -284,7 +284,12 @@ function handmade() {
   ];
   const wines = [
     w("w-sorgive-1", "p-sorgive", "Barbaresco Bricco Sorgive Riserva", { type: "Rosso", denomination: "Barbaresco", classification: "DOCG", grapes: "Nebbiolo 100%", favorite: true,
-      notes: "Bevuto la 2019 a cena da Paolo: ancora chiuso, aspettare almeno 5 anni." }, [
+      notes: "Bevuto la 2019 a cena da Paolo: ancora chiuso, aspettare almeno 5 anni.",
+      tastings: [{ id: "t-demo-1", date: "2026-10-18", vintage: 2019, occasion: "Cena da Paolo", score: 91,
+        sight: "Granato luminoso, unghia aranciata, buona trasparenza.",
+        nose: "Rosa appassita, ciliegia sotto spirito, liquirizia e un tocco di catrame.",
+        palate: "Tannino ancora serrato, acidità viva, chiusura lunga su note di spezie.",
+        pairing: "Brasato con polenta", notes: "Da riprovare tra qualche anno." }] }, [
       { edition: 2027, vintage: 2021, score: 93.5, viti: 4, price: "€ 85", alcohol: "14,5%", bottles: "6.000", fermentation: "acciaio", maturation: "botte grande 30 mesi", pairing: "Brasato al Nebbiolo" },
       { edition: 2026, vintage: 2020, viti: 4, price: "€ 80", alcohol: "14,5%", bottles: "5.500", fermentation: "acciaio", maturation: "botte grande 30 mesi", pairing: "Tajarin al ragù" },
       { edition: 2025, vintage: 2019, viti: 3, price: "€ 78", alcohol: "14%", bottles: "5.000", fermentation: "acciaio", maturation: "botte grande 30 mesi" },
@@ -396,7 +401,7 @@ function generated(rand, usedNames) {
         const ratings = [mkRating(2027, 0, true)];
         if (chance(0.7)) ratings.push(mkRating(2026, 0, false));
         if (ratings.length > 1 && chance(0.6)) ratings.push(mkRating(2025, 0, false));
-        wines.push({ id: wid, producerId: id, name: wname, type, denomination: denom, classification, grapes, favorite: false, notes: "", lists: [], ratings });
+        wines.push({ id: wid, producerId: id, name: wname, type, denomination: denom, classification, grapes, favorite: false, notes: "", lists: [], tastings: [], ratings });
       }
     }
   }
@@ -426,7 +431,7 @@ export function refreshCatalog(saved) {
   if (!saved || saved.dataVersion === DATA_VERSION) return saved || fresh;
   const keep = (list, old) => {
     const byId = Object.fromEntries((old || []).map((x) => [x.id, x]));
-    return list.map((x) => (byId[x.id] ? { ...x, favorite: byId[x.id].favorite, notes: byId[x.id].notes, lists: byId[x.id].lists } : x));
+    return list.map((x) => (byId[x.id] ? { ...x, favorite: byId[x.id].favorite, notes: byId[x.id].notes, lists: byId[x.id].lists, ...(byId[x.id].tastings ? { tastings: byId[x.id].tastings } : {}) } : x));
   };
   const ids = new Set([...fresh.producers, ...fresh.wines].map((x) => x.id));
   return {
