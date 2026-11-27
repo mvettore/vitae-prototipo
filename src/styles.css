@@ -374,3 +374,10 @@ a { color: inherit; }
 .tasting-body > div { display: grid; grid-template-columns: 92px 1fr; gap: 8px; font-size: 14px; }
 .tasting-body dt { color: var(--muted); }
 .tasting-body dd { margin: 0; }
+.card { flex-wrap: wrap; }
+.card-tastings { list-style: none; margin: 4px 0 0; padding: 0; flex-basis: 100%; display: grid; gap: 6px; }
+.card-tastings li { background: #fffaf5; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
+.card-tastings li:hover { border-color: var(--orange); }
+.ct-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.ct-head b { color: var(--text); }
+.ct-text { margin: 4px 0 0; font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

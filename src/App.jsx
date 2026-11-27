@@ -27,6 +27,7 @@ const BROWSE = [
   { k: "denominations", l: "Denominazioni" },
   { k: "grapes", l: "Vitigni" },
   { k: "fav", l: "★ Preferiti" },
+  { k: "tasted", l: "Degustati" },
 ];
 
 const grapeNames = (w) => (w.grapes || "").split(/[,;]/).map((g) => g.replace(/\d+\s*%/, "").trim()).filter(Boolean);
@@ -103,6 +104,7 @@ export default function App() {
       if (type && w.type !== type) return false;
       if (ed && !w.ratings.some((r) => r.edition === ed)) return false;
       if (scope === "fav" && !w.favorite) return false;
+      if (scope === "tasted" && !w.tastings?.length) return false;
       if (listName && !w.lists.includes(listName)) return false;
       if (facet?.kind === "denomination" && w.denomination !== facet.value) return false;
       if (facet?.kind === "grape" && !grapeNames(w).includes(facet.value)) return false;
@@ -132,10 +134,13 @@ export default function App() {
     }[sort];
 
     const showP = ["all", "producers", "fav"].includes(scope) || listName;
-    const showW = ["all", "wines", "fav"].includes(scope) || listName || facet;
+    const showW = ["all", "wines", "fav", "tasted"].includes(scope) || listName || facet;
+    // Nei degustati, per default il più recente in cima.
+    const lastTasted = (w) => S.sortedTastings(w)[0]?.date || "";
+    const wineSort = scope === "tasted" && sort === "name" ? (a, b) => lastTasted(b).localeCompare(lastTasted(a)) || byName(a, b) : sorters[1];
     return {
       producers: showP ? data.producers.filter(producerOk).sort(sorters[0]) : [],
-      wines: showW ? data.wines.filter(wineOk).sort(sorters[1]) : [],
+      wines: showW ? data.wines.filter(wineOk).sort(wineSort) : [],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, tokens, scope, facet, region, edition, type, sort, producerById, winesByProducer]);
@@ -363,6 +368,23 @@ export default function App() {
                               <FavButton on={w.favorite} onToggle={() => actions.patch("wine", w.id, { favorite: !w.favorite })} />
                               <RatingBadge rating={r} type={w.type} size="sm" />
                             </div>
+                            {scope === "tasted" && (
+                              <ul className="card-tastings">
+                                {S.sortedTastings(w).map((t) => (
+                                  <li key={t.id} onClick={(e) => { e.stopPropagation(); actions.editTasting(w.id, t); }}>
+                                    <div className="ct-head">
+                                      <span>
+                                        {t.date ? new Date(t.date + "T12:00").toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" }) : "Senza data"}
+                                        {t.vintage ? <> · <b>{t.vintage}</b></> : null}
+                                        {t.occasion ? ` · ${t.occasion}` : ""}
+                                      </span>
+                                      {t.score != null && <span className="my-score">{S.fmtScore(t.score)}</span>}
+                                    </div>
+                                    {(t.nose || t.palate || t.notes) && <p className="ct-text">{[t.nose, t.palate, t.notes].filter(Boolean).join(" · ")}</p>}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                           </div>
                         </li>
                       );
@@ -403,7 +425,12 @@ export default function App() {
                 </section>
               )}
 
-              {producers.length === 0 && wines.length === 0 && (
+              {scope === "tasted" && wines.length === 0 && !query && (
+                <Empty title="Nessun vino degustato">
+                  <p>Apri un vino e tocca «+ Degustazione» per annotare il tuo assaggio.</p>
+                </Empty>
+              )}
+              {producers.length === 0 && wines.length === 0 && !(scope === "tasted" && !query) && (
                 <Empty title="Nessun risultato">
                   <p>Prova a cambiare ricerca o filtri.</p>
                   <button className="btn" onClick={() => { setQuery(""); goScope("all"); setRegion(""); setEdition(""); setType(""); }}>Azzera tutto</button>

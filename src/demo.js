@@ -3,7 +3,7 @@
 // Il generatore è deterministico (seed fisso): gli id restano stabili tra i
 // ricaricamenti, così preferiti, liste e note dell'utente non si perdono.
 
-export const DATA_VERSION = 5;
+export const DATA_VERSION = 7;
 
 // ── PRNG con seed (mulberry32) ───────────────────────────────
 function rng(seed) {
@@ -301,7 +301,10 @@ function handmade() {
     w("w-sorgive-3", "p-sorgive", "Langhe Nebbiolo", { type: "Rosso", denomination: "Langhe Nebbiolo", classification: "DOC e DOP", grapes: "Nebbiolo 100%" }, [
       { edition: 2027, vintage: 2023, score: 88, viti: 3, price: "€ 22", alcohol: "13,5%", bottles: "15.000", fermentation: "acciaio", maturation: "acciaio 8 mesi", pairing: "Vitello tonnato" },
     ]),
-    w("w-poggio-1", "p-poggio-ai-venti", "Brunello di Montalcino", { type: "Rosso", denomination: "Brunello di Montalcino", classification: "DOCG", grapes: "Sangiovese 100%", lists: ["Da comprare"] }, [
+    w("w-poggio-1", "p-poggio-ai-venti", "Brunello di Montalcino", { type: "Rosso", denomination: "Brunello di Montalcino", classification: "DOCG", grapes: "Sangiovese 100%", lists: ["Da comprare"],
+      tastings: [{ id: "t-demo-2", date: "2026-11-14", vintage: 2020, occasion: "Presentazione della guida, Firenze", score: 93,
+        sight: "Rubino con riflessi granato, limpido.", nose: "Amarena, viola, cuoio e sottobosco, finale balsamico.",
+        palate: "Pieno e sapido, tannino fitto ma levigato, lunga persistenza.", pairing: "", notes: "Il migliore della serata: comprarne qualche bottiglia." }] }, [
       { edition: 2027, vintage: 2020, score: 94.5, viti: 4, tastevin: true, price: "€ 60", alcohol: "14,5%", bottles: "25.000", fermentation: "acciaio", maturation: "botte grande 36 mesi", pairing: "Peposo all'imprunetina" },
       { edition: 2026, vintage: 2019, viti: 4, tastevin: true, price: "€ 58" },
       { edition: 2025, vintage: 2018, viti: 4, price: "€ 55" },
@@ -309,7 +312,10 @@ function handmade() {
     w("w-poggio-2", "p-poggio-ai-venti", "Rosso di Montalcino", { type: "Rosso", denomination: "Rosso di Montalcino", classification: "DOC e DOP", grapes: "Sangiovese 100%" }, [
       { edition: 2027, vintage: 2023, score: 87.5, viti: 3, price: "€ 22", alcohol: "13,5%", bottles: "40.000", fermentation: "acciaio", maturation: "botte grande 12 mesi", pairing: "Pici all'aglione" },
     ]),
-    w("w-terre-1", "p-terre-rosse", "Primitivo di Manduria Riserva", { type: "Rosso", denomination: "Primitivo di Manduria", classification: "DOC e DOP", grapes: "Primitivo 100%" }, [
+    w("w-terre-1", "p-terre-rosse", "Primitivo di Manduria Riserva", { type: "Rosso", denomination: "Primitivo di Manduria", classification: "DOC e DOP", grapes: "Primitivo 100%",
+      tastings: [{ id: "t-demo-3", date: "2026-08-09", vintage: 2021, occasion: "In cantina, vacanze in Salento", score: 88,
+        sight: "Rubino impenetrabile.", nose: "Prugna, fico secco, carruba, spezie dolci.",
+        palate: "Caldo e morbido, alcol ben integrato, chiude su note di cacao.", pairing: "Orecchiette al ragù di braciole", notes: "Pagato 24 € in cantina." }] }, [
       { edition: 2027, vintage: 2022, score: 90, viti: 4, price: "€ 28", alcohol: "15%", bottles: "4.000", fermentation: "acciaio", maturation: "botte piccola 18 mesi", pairing: "Bombette pugliesi" },
       { edition: 2026, vintage: 2021, viti: 3, price: "€ 26" },
     ]),
@@ -431,7 +437,7 @@ export function refreshCatalog(saved) {
   if (!saved || saved.dataVersion === DATA_VERSION) return saved || fresh;
   const keep = (list, old) => {
     const byId = Object.fromEntries((old || []).map((x) => [x.id, x]));
-    return list.map((x) => (byId[x.id] ? { ...x, favorite: byId[x.id].favorite, notes: byId[x.id].notes, lists: byId[x.id].lists, ...(byId[x.id].tastings ? { tastings: byId[x.id].tastings } : {}) } : x));
+    return list.map((x) => (byId[x.id] ? { ...x, favorite: byId[x.id].favorite, notes: byId[x.id].notes, lists: byId[x.id].lists, ...(byId[x.id].tastings?.length ? { tastings: byId[x.id].tastings } : {}) } : x));
   };
   const ids = new Set([...fresh.producers, ...fresh.wines].map((x) => x.id));
   return {
