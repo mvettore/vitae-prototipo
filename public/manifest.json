@@ -3,7 +3,7 @@
   "short_name": "Taccuino",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f7f2ea",
-  "theme_color": "#7a1f33",
+  "background_color": "#ffffff",
+  "theme_color": "#ef7d33",
   "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
 }

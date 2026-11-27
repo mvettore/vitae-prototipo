@@ -8,7 +8,7 @@ export function hasKey() {
   return !!process.env.ANTHROPIC_API_KEY;
 }
 
-export async function callClaudeVision({ prompt, images, maxTokens = 1500, signal }) {
+export async function callClaudeVision({ prompt, images, maxTokens = 3000, signal }) {
   const content = images.map((img) => ({
     type: "image",
     source: { type: "base64", media_type: img.mediaType || "image/jpeg", data: img.base64 },

@@ -50,7 +50,7 @@ export async function scanVitae(dataUrls) {
       },
       body: JSON.stringify({
         model: "claude-haiku-5-5",
-        max_tokens: 1500,
+        max_tokens: 3000,
         messages: [{
           role: "user",
           content: [

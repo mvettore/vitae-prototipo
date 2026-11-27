@@ -2,7 +2,10 @@
 // Struttura:
 //   producers: [{ id, name, region, town, website, favorite, notes, lists[], createdAt, updatedAt }]
 //   wines:     [{ id, producerId, name, denomination, type, grape, favorite, notes, lists[], ratings[], createdAt, updatedAt }]
-//   ratings:   [{ id, edition, vintage, viti, score, tastevin, selection, price }]
+//   ratings:   [{ id, edition, vintage, score, viti, tastevin, selection, price, format,
+//                 alcohol, bottles, fermentation, maturation, pairing }]
+//   Una "valutazione" è la recensione di un'annata in una certa edizione della guida:
+//   la scheda tecnica (alcol, bottiglie, affinamento…) cambia con l'annata, quindi sta qui.
 //   lists:     ["Da provare", ...]
 //   recent:    [{ kind: "producer"|"wine", id }]
 
@@ -15,6 +18,34 @@ export const REGIONS = [
   "Marche", "Lazio", "Abruzzo", "Molise", "Campania", "Puglia", "Basilicata",
   "Calabria", "Sicilia", "Sardegna",
 ];
+
+// Campi testuali del produttore, nell'ordine in cui compaiono nella scheda.
+export const PRODUCER_FIELDS = [
+  ["owner", "Titolare"],
+  ["address", "Indirizzo"],
+  ["town", "Comune"],
+  ["region", "Regione"],
+  ["phone", "Telefono"],
+  ["email", "Email"],
+  ["website", "Sito web"],
+  ["founded", "Anno di fondazione"],
+  ["oenologist", "Conduzione enologica"],
+  ["agronomist", "Conduzione agronomica"],
+  ["viticulture", "Viticoltura"],
+  ["bottles", "Bottiglie prodotte"],
+];
+
+// Scheda tecnica di un'annata recensita.
+export const REVIEW_FACTS = [
+  ["alcohol", "Alcol"],
+  ["bottles", "Bottiglie"],
+  ["fermentation", "Fermentazione"],
+  ["maturation", "Mat./Aff."],
+  ["format", "Formato"],
+  ["pairing", "Abbinamento"],
+];
+
+export const CLASSIFICATIONS = ["DOCG", "DOC e DOP", "IGT e IGP", "Vino da tavola"];
 
 export const emptyData = () => ({
   version: 1,
@@ -34,6 +65,10 @@ export function load() {
   }
 }
 
+export function hasSaved() {
+  try { return localStorage.getItem(KEY) !== null; } catch { return false; }
+}
+
 export function save(data) {
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
@@ -48,6 +83,7 @@ export function sanitize(d) {
   if (!d || typeof d !== "object") return base;
   return {
     version: 1,
+    demo: !!d.demo,
     producers: Array.isArray(d.producers) ? d.producers.map((p) => ({ lists: [], notes: "", favorite: false, ...p })) : [],
     wines: Array.isArray(d.wines) ? d.wines.map((w) => ({ lists: [], notes: "", favorite: false, ratings: [], ...w })) : [],
     lists: Array.isArray(d.lists) ? d.lists.filter((l) => typeof l === "string") : base.lists,
@@ -75,7 +111,7 @@ const now = () => new Date().toISOString();
 // convertite su scala 100 (solo per l'ordinamento, mai mostrato).
 export function ratingValue(r) {
   if (!r) return -1;
-  if (r.score != null && r.score !== "") return Number(r.score) + (r.tastevin ? 0.5 : 0);
+  if (r.score != null && r.score !== "") return Number(r.score) + (r.viti || 0) / 10 + (r.tastevin ? 0.05 : 0);
   if (r.viti) return 78 + Number(r.viti) * 4 + (r.tastevin ? 2 : 0);
   return r.tastevin ? 95 : 0;
 }
@@ -203,52 +239,64 @@ export function removeList(data, name) {
 // ── Import da scheda letta con l'AI ──────────────────────────
 // Unisce al taccuino esistente: produttore riconosciuto per nome,
 // vino per nome+produttore, valutazione per edizione+annata.
+// I campi già compilati a mano non vengono sovrascritti.
+const clean = (v) => (v === null || v === undefined ? "" : String(v).trim());
+
 export function mergeScan(data, scan) {
   let d = data;
-  const pName = (scan.producer?.name || "").trim();
+  const sp = scan.producer || {};
+  const pName = clean(sp.name);
   if (!pName) throw new Error("Nome del produttore mancante");
+
+  const incoming = { visits: !!sp.visits, shop: !!sp.shop };
+  for (const [k] of PRODUCER_FIELDS) incoming[k] = clean(sp[k]);
 
   let producer = d.producers.find((p) => norm(p.name) === norm(pName));
   let producerNew = false;
   if (!producer) {
-    d = upsertProducer(d, { name: pName, region: scan.producer.region || "", town: scan.producer.town || "" });
-    producer = d.producers[d.producers.length - 1];
+    const id = uid();
+    d = upsertProducer(d, { ...incoming, id, name: pName });
+    producer = d.producers.find((p) => p.id === id);
     producerNew = true;
   } else {
     const fill = {};
-    if (!producer.region && scan.producer.region) fill.region = scan.producer.region;
-    if (!producer.town && scan.producer.town) fill.town = scan.producer.town;
+    for (const [k, v] of Object.entries(incoming)) if (v && !producer[k]) fill[k] = v;
     if (Object.keys(fill).length) d = patchItem(d, "producer", producer.id, fill);
   }
 
   let winesNew = 0;
   let ratingsNew = 0;
   for (const sw of scan.wines || []) {
-    const name = (sw.name || "").trim();
+    const name = clean(sw.name);
     if (!name) continue;
     let wine = d.wines.find((w) => w.producerId === producer.id && norm(w.name) === norm(name));
+    const wineFields = {
+      denomination: clean(sw.denomination),
+      classification: clean(sw.classification),
+      type: WINE_TYPES.includes(sw.type) ? sw.type : "",
+      grapes: clean(sw.grapes),
+    };
     if (!wine) {
-      d = upsertWine(d, {
-        producerId: producer.id,
-        name,
-        denomination: sw.denomination || "",
-        type: WINE_TYPES.includes(sw.type) ? sw.type : "",
-        grape: sw.grape || "",
-      });
-      wine = d.wines[d.wines.length - 1];
+      const id = uid();
+      d = upsertWine(d, { ...wineFields, id, producerId: producer.id, name });
+      wine = d.wines.find((w) => w.id === id);
       winesNew++;
+    } else {
+      const fill = {};
+      for (const [k, v] of Object.entries(wineFields)) if (v && !wine[k]) fill[k] = v;
+      if (Object.keys(fill).length) { d = patchItem(d, "wine", wine.id, fill); wine = d.wines.find((w) => w.id === wine.id); }
     }
-    const hasRating = sw.edition || sw.viti || sw.score || sw.tastevin;
-    if (!hasRating) continue;
     const rating = {
       edition: toInt(sw.edition),
       vintage: toInt(sw.vintage),
+      score: toNum(sw.score),
       viti: toInt(sw.viti),
-      score: toInt(sw.score),
       tastevin: !!sw.tastevin,
-      selection: sw.selection || "",
-      price: sw.price ? String(sw.price) : "",
+      selection: clean(sw.selection),
+      price: clean(sw.price),
     };
+    for (const [k] of REVIEW_FACTS) rating[k] = clean(sw[k]);
+    if (!rating.edition && rating.score == null && !rating.viti) continue;
     const dup = wine.ratings.find((r) => r.edition === rating.edition && r.vintage === rating.vintage);
     d = saveRating(d, wine.id, dup ? { ...dup, ...rating, id: dup.id } : rating);
     if (!dup) ratingsNew++;
@@ -261,3 +309,12 @@ export function toInt(v) {
   const n = parseInt(v, 10);
   return Number.isFinite(n) ? n : null;
 }
+
+// I punteggi Vitae possono avere il mezzo punto (92,5).
+export function toNum(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = parseFloat(String(v).replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+export const fmtScore = (n) => (n == null ? "" : Number(n).toLocaleString("it-IT", { maximumFractionDigits: 1 }));

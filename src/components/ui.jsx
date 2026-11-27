@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { fmtScore } from "../store.js";
 
 // ── Icone (SVG inline, ereditano il colore) ───────────────────
 const paths = {
@@ -16,6 +17,13 @@ const paths = {
   list: <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" />,
   building: <path d="M4 20V8l8-4 8 4v12M9 20v-5h6v5M4 20h16" />,
   glass: <path d="M8 3h8l-.6 6a3.4 3.4 0 0 1-6.8 0zM12 13v7M8.5 20h7" />,
+  menu: <path d="M4 8h16M4 16h16" />,
+  sign: <path d="M12 3v18M12 5h7l2 2.5-2 2.5h-7M12 12H5l-2 2.5L5 17h7" />,
+  mail: <><rect x="3" y="5.5" width="18" height="13" rx="1.5" /><path d="m3.5 6.5 8.5 7 8.5-7" /></>,
+  globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18" /></>,
+  phone: <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z" />,
+  open: <><path d="m4 10 14-4 2.5 8-14 4z" /><path d="M11 8 13 3" /></>,
+  shop: <><path d="M4 9h16l-1.5-4h-13zM5 9v11h14V9M9 20v-6h4v6" /></>,
 };
 
 export function Icon({ name, size = 20, filled = false, style }) {
@@ -52,29 +60,42 @@ export function FavButton({ on, onToggle, size = 22 }) {
   );
 }
 
-// ── Valutazione Vitae ─────────────────────────────────────────
-// Viti (fino al 2026) come grappoli pieni/vuoti, centesimi dal 2027.
-export function Viti({ n }) {
+// ── Logo ──────────────────────────────────────────────────────
+// Ricostruzione testuale del marchio per il prototipo.
+// Per usare il file ufficiale: metti public/logo.svg e imposta USE_LOGO_FILE.
+const USE_LOGO_FILE = false;
+export function Logo({ edition }) {
+  if (USE_LOGO_FILE) return <img className="logo-img" src="/logo.svg" alt="Vitae" />;
   return (
-    <span className="viti" aria-label={`${n} viti su 4`}>
-      {[1, 2, 3, 4].map((i) => (
-        <span key={i} className={i <= n ? "vite on" : "vite"} />
-      ))}
+    <div className="logo" aria-label={`Vitae, la guida vini ${edition}`}>
+      <div className="logo-vitae"><span>v</span><span>i</span><span className="logo-t">t</span><span>a</span><span>e</span></div>
+      <div className="logo-line">LA GUIDA</div>
+      <div className="logo-line">VINI <b>{edition}</b></div>
+    </div>
+  );
+}
+
+// ── Valutazione Vitae ─────────────────────────────────────────
+// Punteggio in centesimi nel riquadro arancione, viti nel riquadro
+// colorato secondo la tipologia (come nella guida).
+export function Viti({ n, type }) {
+  if (!n) return null;
+  return (
+    <span className={`viti viti-${typeKey(type)}`} aria-label={`${n} viti`}>
+      {Array.from({ length: n }, (_, i) => <span key={i} className="vite">t</span>)}
     </span>
   );
 }
 
-export function RatingBadge({ rating, compact = false }) {
-  if (!rating) return null;
+export const typeKey = (t) => (t || "").toLowerCase().replace(/[^a-z]/g, "") || "rosso";
+
+export function RatingBadge({ rating, type, size = "md" }) {
+  if (!rating || (rating.score == null && !rating.viti && !rating.tastevin)) return null;
   return (
-    <span className="rating">
-      {rating.score != null ? (
-        <span className="score">{rating.score}<small>/100</small></span>
-      ) : rating.viti ? (
-        <Viti n={rating.viti} />
-      ) : null}
+    <span className={`rating rating-${size}`}>
+      {rating.score != null && <span className="score">{fmtScore(rating.score)}</span>}
+      <Viti n={rating.viti} type={type} />
       {rating.tastevin && <span className="tag tag-gold">Tastevin</span>}
-      {!compact && rating.selection && <span className="tag">{rating.selection}</span>}
     </span>
   );
 }

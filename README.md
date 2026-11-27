@@ -1,6 +1,10 @@
 # Taccuino Vitae
 
-Web app personale (installabile su iPhone) per consultare e annotare i vini della guida **Vitae** dell'AIS.
+Prototipo **non ufficiale** di una nuova interfaccia per la guida vini **Vitae** dell'AIS: web app installabile su iPhone, con il look dell'app ufficiale (bianco e arancio, punteggio in centesimi e viti) e una navigazione ripensata.
+
+Al primo avvio mostra **dati dimostrativi inventati** (produttori e vini che non esistono), per non pubblicare contenuti della guida. Dal banner "Inizia vuoto" si parte con il taccuino vuoto e si aggiungono i propri dati.
+
+Il logo in testata è una ricostruzione testuale: per usare il file ufficiale, mettilo in `public/logo.svg` e imposta `USE_LOGO_FILE = true` in `src/components/ui.jsx`. Il sito è escluso dai motori di ricerca (`robots.txt`, meta e header `noindex`).
 
 Nasce per coprire quello che manca all'app ufficiale:
 
@@ -9,7 +13,9 @@ Nasce per coprire quello che manca all'app ufficiale:
 - **Note personali** su ogni produttore e su ogni vino, salvate in automatico.
 - **Preferiti e liste personali** (es. "Da provare", "Da comprare"), filtrabili con un tocco.
 - **Valutazioni per edizione:** sullo stesso vino vedi la storia tra le edizioni, viti fino alla 2026 e centesimi dalla 2027, più il Tastevin.
-- **Recenti**, filtri per regione, edizione e tipologia, ordinamento per punteggio.
+- **Scheda tecnica per annata** (alcol, bottiglie, fermentazione, affinamento, abbinamento) e cambio edizione con un tocco.
+- **Sfoglia per denominazione e vitigno**, come nel menu dell'app ufficiale.
+- **Recenti**, filtri per edizione, regione e tipologia, ordinamento per punteggio o prezzo.
 
 ## Da dove vengono i dati
 

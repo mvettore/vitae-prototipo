@@ -19,7 +19,7 @@ export const handler = async (event, context) => {
 
   let body;
   try { body = JSON.parse(event.body); } catch { return json(400, { error: "Body non valido" }); }
-  const images = (body.images || []).filter((i) => i?.base64 && i?.mediaType).slice(0, 2);
+  const images = (body.images || []).filter((i) => i?.base64 && i?.mediaType).slice(0, 4);
   if (!images.length) return json(400, { error: "Nessuna immagine" });
 
   // Torna un errore leggibile prima che la piattaforma uccida la function.
