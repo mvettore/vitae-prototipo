@@ -1,0 +1,9 @@
+{
+  "name": "Taccuino Vitae",
+  "short_name": "Taccuino",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f2ea",
+  "theme_color": "#7a1f33",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
